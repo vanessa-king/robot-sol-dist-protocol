@@ -150,9 +150,11 @@ protocol(**{})
 There is no input to this function. The protocol starts by defining some variables used later in the script, such as the boolean ‘less_than_crit’ which describes whether a volume meets the small volume condition, ‘list_of_solutions’ array, and the ‘solution_pos’ array. Next, the protocol checks the entries of the solution arrays in the User Input section. For all solution arrays not left empty, it records the solution name in the list_of_solutions array and the solution position in the solution well plate in the solution_pos array. In the 6-well plate, solution_A is defined as being in well A1, solution_B is defined as being in well B1, solution_C is defined as being in well A2, solution_D is defined as being in well B2, and the precipitator is defined as being in well A3. 
 	Once these arrays are built, the goal is to first distribute any solution volumes below the small volume condition. Since distributing small volumes requires the pipette tip to drop low to the surface of the plate, the protocol chooses to distribute all small volumes first in order to avoid cross contamination at the pipette tip. In order to do this, we start by creating a ‘small_volume’ boolean and setting it to True. Then, we run the solution_run_through function for small_volume = True. This goes through the distribution of all small volumes. Next, we set small_volume = False and run the solution_run_through function again for the new value of small_volume. 
 
-Errors and Misuse
+**Errors and Misuse**
+
 	Many of the ways in which our protocol can be used incorrectly do not raise errors and thus may not be noticed until watching the Robot execute the actions. One of the reasons for this is that regular forms of scripted output that would relay errors or misuse to the user can’t be used when uploaded to the Opentrons App. For example, scripted output of strings are not relayed in the Opentrons App as they are not an executable function for the Robot. While the Opentrons App will announce any basic scripting errors when uploading the protocol, often there is no way of knowing if the protocol will perform as you expect until you see the Robot executing the actions. One method of learning how the App has interpreted the protocol before asking the Robot to execute those actions is by looking at the list of executable actions in the Run tab of the App after the calibration process.
 	This barrier to building in failsaves is part of the motivation for creating a User Input section at the top of the protocol that can hopefully condenses sources of error and any accidental edits to the script. 
 
-Citations
+**Citations**
+
 (1) opentrons; Opentrons: Brooklyn, NY, 2018.
