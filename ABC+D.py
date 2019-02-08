@@ -27,8 +27,8 @@ current_pipettes = [10,50] #300, 50 or 10. First entry = Left mount, second entr
     #                                                                             |0         |                         |         0|
     #Not using a solution or the precipitator: [] 
 
-solution_A = [8,1, 'x']
-solution_B = [8,1, 'x']
+solution_A = [8,0, '2D',1,-1]
+solution_B = []
 solution_C = []
 solution_D = []
 precipitator = []
@@ -37,8 +37,8 @@ precipitator = []
 ##Pipette Settings##
 
 #Minimum Volume
-P300_min_volume = 51 #ul
-P50_min_volume = 11 #ul
+P300_min_volume = 50.1 #ul
+P50_min_volume = 10.1 #ul
 
 #Dispense rate
 P300_dispense_rate = 300 #ul/s
@@ -61,7 +61,6 @@ from opentrons.data_storage import database
 from sqlite3 import IntegrityError
 import math
 
-
 #Creating P50 Tiprack
 try:
     custom_container = labware.create(
@@ -78,7 +77,7 @@ try:
     custom_container = labware.create(
     'full_alumina',           # name of your container
     grid=(8, 8),           # specify amount of (columns, rows)
-    spacing=(9.5,12),      # distances (mm) between each (column, row)
+    spacing=(10,12),      # distances (mm) between each (column, row)
     diameter=0.5,            # diameter (mm) of each well on the plate
     depth=25)              # depth (mm) of each well on the plate
 except IntegrityError:
@@ -144,7 +143,7 @@ except IntegrityError:
 solutions = containers.load('6-well-plate', '3', 'solutions')
 trash = robot.fixed_trash
 m300rack = containers.load('opentrons-tiprack-300ul', '4', 'm300-rack')
-m50rack = containers.load('tiprack-Fisher200ul', '7', 'm50-rack')
+m50rack = containers.load('tiprack-Fisher200ul', '8', 'm50-rack')
 m10rack = containers.load('tiprack-10ul', '1', 'm10-rack')
 
 
@@ -224,20 +223,20 @@ def allot(pipette, volume, solution, well, small_condition): #Aspirate function.
 def nonconstant_vol_procedure(small_pipette, large_pipette, small_volume, less_than_crit_well, volume, large_min_volume, sol_pos, well_pos, small_condition):
     if small_volume == less_than_crit_well: #ie: distribute this this iteration
         if (volume < large_min_volume) and (volume != 0):
-            allot(small_pipette, volume_step_well, sol_pos, well_pos, small_condition)
+            allot(small_pipette, volume, sol_pos, well_pos, small_condition)
         elif(volume == 0):
             robot.comment("0ul. Nothing is done.")
         else:
             allot(large_pipette, volume, sol_pos, well_pos, small_condition)
 
-def checkerboard_distribution(pipette, volume, container_choice, solutions, small_condition, pairity):
-	behaviour = []
+def checkerboard_distribution(pipette, volume, container_choice, position, small_condition, pairity):
+	behaviour = [0,0]
 	if pairity == "even":
-		behaviour.append('k*2')
-		behaviour.append('k*2+1')
+		behaviour[0]=('k*2')
+		behaviour[1]=('k*2+1')
 	if pairity == "odd":
-		behaviour.append('k*2+1')
-		behaviour.append('k*2')
+		behaviour[0]=('k*2+1')
+		behaviour[1]=('k*2')
 
 	if container_choice == 'full_alumina':
 	    for j in range(8):
@@ -245,10 +244,10 @@ def checkerboard_distribution(pipette, volume, container_choice, solutions, smal
 	            #Is our column even or odd?
 	            if (j%2) == 0:
 	                #We are in an even column
-	                allot(pipette, volume, solutions[position], plate.cols(j).wells(behaviour[0]), small_condition)
+	                allot(pipette, volume, position, plate.cols(j).wells(eval(behaviour[0])), small_condition)
 	            else:
-	                #We are in an odd column
-                    allot(pipette, volume, solutions[position], plate.cols(j).wells(behaviour[1]), small_condition)
+	            	#We are in an odd column
+	            	allot(pipette, volume, position, plate.cols(j).wells(eval(behaviour[1])), small_condition)
 
 	if container_choice == 'half_alumina':
 	    for j in range(4):
@@ -256,10 +255,10 @@ def checkerboard_distribution(pipette, volume, container_choice, solutions, smal
 	            #Is our column even or odd?
 	            if (j%2) == 0:
 	                #We are in an even column
-	                allot(pipette, volume, solutions[position], plate.cols(j).wells(behaviour[0]), small_condition)
+	                allot(pipette, volume, position, plate.cols(j).wells(eval(behaviour[0])), small_condition)
 	            else:
 	                #We are in an odd column
-	                allot(pipette, volume, solutions[position], plate.cols(j).wells(behaviour[1]), small_condition)
+	                allot(pipette, volume, position, plate.cols(j).wells(eval(behaviour[1])), small_condition)
 
 	if container_choice == 'cups':
 	    for j in range(2):
@@ -267,46 +266,47 @@ def checkerboard_distribution(pipette, volume, container_choice, solutions, smal
 	            #Is our column even or odd?
 	            if (j%2) == 0:
 	                #We are in an even column
-	                allot(pipette, volume, solutions[position], plate_1.cols(j).wells(behaviour[0]), small_condition)
+	                allot(pipette, volume, position, plate_1.cols(j).wells(eval(behaviour[0])), small_condition)
 	            else:
 	                #We are in an odd column
-	                allot(pipette, volume, solutions[position], plate_1.cols(j).wells(behaviour[1]), small_condition)
+	                allot(pipette, volume, position, plate_1.cols(j).wells(eval(behaviour[1])), small_condition)
 
 	    for j in range(2):
 	        for k in range(4):
 	            #Is our column even or odd?
 	            if (j%2) == 0:
 	                #We are in an even column
-	                allot(pipette, volume, solutions[position], plate_2.cols(j).wells(behaviour[0]), small_condition)
+	                allot(pipette, volume, position, plate_2.cols(j).wells(eval(behaviour[0])), small_condition)
 	            else:
 	                #We are in an odd column
-	                allot(pipette, volume, solutions[position], plate_2.cols(j).wells(behaviour[1]), small_condition)
+	                allot(pipette, volume, position, plate_2.cols(j).wells(eval(behaviour[1])), small_condition)
 
 	    for j in range(2):
 	        for k in range(4):
 	            #Is our column even or odd?
 	            if (j%2) == 0:
 	                #We are in an even column
-	                allot(pipette, volume, solutions[position], plate_3.cols(j).wells(behaviour[0]), small_condition)
+	                allot(pipette, volume, position, plate_3.cols(j).wells(eval(behaviour[0])), small_condition)
 	            else:
 	                #We are in an odd column
-	                allot(pipette, volume, solutions[position], plate_3.cols(j).wells(behaviour[1]), small_condition)
+	                allot(pipette, volume, position, plate_3.cols(j).wells(eval(behaviour[1])), small_condition)
 
 	    for j in range(2):
 	        for k in range(4):
 	            #Is our column even or odd?
 	            if (j%2) == 0:
 	                #We are in an even column
-	                allot(pipette, volume, solutions[position], plate_4.cols(j).wells(behaviour[0]), small_condition)
+	                allot(pipette, volume, position, plate_4.cols(j).wells(eval(behaviour[0])), small_condition)
 	            else:
 	                #We are in an odd column
-	                allot(pipette, volume, solutions[position], plate.cols(j).wells(behaviour[1]), small_condition)
+	                allot(pipette, volume, position, plate.cols(j).wells(eval(behaviour[1])), small_condition)
 	pipette.drop_tip()
 
 def solution_run_through(small_pipette, large_pipette, container_choice, small_volume, small_condition, solution_pos, list_of_solutions, solutions):
     for i in range(len(list_of_solutions)):
         #For each generic solution:
         position = solution_pos[i]
+        less_than_crit = False
 
         #If we have a constant volume solution
         if len(list_of_solutions[i]) == 1:
@@ -344,7 +344,7 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
 
             		small_pipette.drop_tip()
 
-	            else:
+            	else:
 	                large_pipette.pick_up_tip()
 
 	                #4. Ask the pipette to distribute the volume
@@ -371,40 +371,22 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
 
         #If we have a checkerboard distribution:
         if len(list_of_solutions[i]) == 2:
+        	#1. What volume?
+        	volume = list_of_solutions[i][0]
+        	if volume < small_condition:
+        		less_than_crit = True
 
-            #1. What volume?
-            volume = list_of_solutions[i][0]
-            if volume < small_condition:
-                less_than_crit = True
 
-            #2. Should we distribute this volume now? Yes, if this statement evaluates to True
-            if small_volume == less_than_crit:
+        	#2. Should we distribute this volume now? Yes, if this statement evaluates to True
+        	if small_volume == less_than_crit:
+        		#3. What pipette is best?
+        		if volume < large_min_volume:
+        			small_pipette.pick_up_tip()
+        			checkerboard_distribution(small_pipette, volume, container_choice, solutions[position], small_condition, list_of_solutions[i][1])
 
-                #3. What pipette is best?
-                if volume < large_min_volume:
-                    small_pipette.pick_up_tip()
-
-                    #3. Even or odd?
-                    if list_of_solutions[i][1] == "even":
-                        #4. Ask the pipette to distribute the volume
-                        checkerboard_distribution(small_pipette, volume, container_choice, solutions, small_condition, 'even')
-
-                    #3. Even or odd?
-                    if list_of_solutions[i][1] == "odd":
-                        #4. Ask the pipette to distribute the volume
-                        checkerboard_distribution(small_pipette, volume, container_choice, solutions, small_condition, 'odd')
-
-                else:
-                    large_pipette.pick_up_tip()
-                    #3. Even or odd?
-                    if list_of_solutions[i][1] == "even":
-                        #4. Ask the pipette to distribute the volume
-                        checkerboard_distribution(large_pipette, volume, container_choice, solutions, small_condition, 'even')
-
-                    #3. Even or odd?
-                    if list_of_solutions[i][1] == "odd":
-                        #4. Ask the pipette to distribute the volume
-                        checkerboard_distribution(large_pipette, volume, container_choice, solutions, small_condition, 'odd')
+        		else:
+        			large_pipette.pick_up_tip()
+        			checkerboard_distribution(large_pipette, volume, container_choice, solutions[position], small_condition, list_of_solutions[i][1])
 
                 #Done with checkerboard protocol
 	
@@ -425,7 +407,7 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
             
             #Initial check of range of distribution and creating a less_than_crit array.
             less_than_crit_array = []
-            for index in range(volume_steps):
+            for index in range(len(volume_steps)):
             	if volume_steps[index] < small_condition:
             		less_than_crit = True
             		less_than_crit_array.append(less_than_crit)
@@ -465,7 +447,7 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
 
                 	for j in range(8):
                 		for k in range(4):
-                            nonconstant_vol_procedure(small_pipette, large_pipette, small_volume, less_than_crit_array[k], volume_steps[k], large_min_volume, solutions[position], plate.rows(j).wells(k), small_condition)
+                			nonconstant_vol_procedure(small_pipette, large_pipette, small_volume, less_than_crit_array[k], volume_steps[k], large_min_volume, solutions[position], plate.rows(j).wells(k), small_condition)
 
                 if container_choice == 'cups':
                     for j in range(8):
@@ -495,7 +477,7 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
                 if container_choice == 'half_alumina':
                 	for j in range(4):
                 		for k in range(8):
-                            nonconstant_vol_procedure(small_pipette, large_pipette, small_volume, less_than_crit_array[k], volume_steps[k], large_min_volume, solutions[position], plate.cols(j).wells(k), small_condition)
+                			nonconstant_vol_procedure(small_pipette, large_pipette, small_volume, less_than_crit_array[k], volume_steps[k], large_min_volume, solutions[position], plate.cols(j).wells(k), small_condition)
 
                 if container_choice == 'cups':
                     for j in range(8):
@@ -547,7 +529,7 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
 
             #Initial check of range of distribution and creating a less_than_crit array.
             less_than_crit_array = []
-            for index in range(volume_steps):
+            for index in range(len(volume_steps)):
             	if volume_steps[index] < small_condition:
             		less_than_crit = True
             		less_than_crit_array.append(less_than_crit)
@@ -573,7 +555,7 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
             if container_choice == 'cups':
                 for j in range(8):
                 	for k in range(2):
-                        nonconstant_vol_procedure(small_pipette, large_pipette, small_volume, less_than_crit_array[j+k], volume_steps[j+k], large_min_volume, solutions[position], plate_1.rows(j).wells(k), small_condition)
+                		nonconstant_vol_procedure(small_pipette, large_pipette, small_volume, less_than_crit_array[j+k], volume_steps[j+k], large_min_volume, solutions[position], plate_1.rows(j).wells(k), small_condition)
 
                 for j in range(8):
                     for k in range(2):
@@ -606,11 +588,13 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
             start = list_of_solutions[i][0]
             end = list_of_solutions[i][1]
             #Create list of volume per well
+            volume_steps=[[0 for x in range(8)] for y in range(8)]
             for j in range(8):
                 for k in range(8):
                     volume_steps[j][k] = start - (j*start/7) - ((start - (j*start/7))/7)*k
 
             #Initial check of range of distribution and creating a less_than_crit array
+            less_than_crit_array=[[False for x in range(8)]for y in range(8)]
             for j in range(8):
                 for k in range(8):
                     if volume_steps[j][k] < small_condition:
@@ -635,7 +619,7 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
                     large_pipette.pick_up_tip()
 
             #4. Now we're ready to ask the robot to distribute this solution
-            if direction == [1,-1]:
+            if direction_array == [1,-1]:
                 #Gradient is towards bottom right
 
                 if container_choice == 'full_alumina':
@@ -657,7 +641,7 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
                         for k in range(2):
                             nonconstant_vol_procedure(small_pipette, large_pipette, small_volume, less_than_crit_array[j][k+6], volume_steps[j][k+6], large_min_volume, solutions[position], plate_4.rows(j).wells(k), small_condition)             
 
-            if direction == [1,1]:
+            if direction_array == [1,1]:
                 #Gradient is towards top right 
 
                 if container_choice == 'full_alumina':
@@ -679,7 +663,7 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
                         for k in range(2):
                             nonconstant_vol_procedure(small_pipette, large_pipette, small_volume, less_than_crit_array[j][7-k+6], volume_steps[j][7-k+6], large_min_volume, solutions[position], plate_4.cols(j).wells(k), small_condition)
 
-            if direction == [-1,1]:
+            if direction_array == [-1,1]:
                 #Gradient is towards top left 
 
                 if container_choice == 'full_alumina':
@@ -701,7 +685,7 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
                         for k in range(2):
                             nonconstant_vol_procedure(small_pipette, large_pipette, small_volume, less_than_crit_array[7-j][7-k+6], volume_steps[7-j][7-k+6], large_min_volume, solutions[position], plate_4.cols(j).wells(k), small_condition)
 
-            if direction == [-1,-1]:
+            if direction_array == [-1,-1]:
                 #Gradient is towards bottom left
 
                 if container_choice == 'full_alumina':
@@ -740,33 +724,33 @@ def solution_run_through(small_pipette, large_pipette, container_choice, small_v
 
 
 def protocol():
-	less_than_crit = False
-    list_of_solutions = []
-    solution_pos =[]
-    #Recording which solutions we are using.
-    if len(solution_A) !=0 :
-        list_of_solutions.append(solution_A)
-        solution_pos.append('A1')
-    if len(solution_B) !=0 :
-        list_of_solutions.append(solution_B)
-        solution_pos.append('B1')
-    if len(solution_C) !=0 :
-        list_of_solutions.append(solution_C)
-        solution_pos.append('A2')
-    if len(solution_D) !=0 :
-        list_of_solutions.append(solution_D)
-        solution_pos.append('B2')
-    if len(precipitator) !=0 :
-        list_of_solutions.append(precipitator)
-        solution_pos.append('A3')
+	list_of_solutions = []
+	solution_pos =[]
 
-    #First run small volume solution_run_through
-    small_volume = True
-    solution_run_through(small_pipette, large_pipette, container_choice, small_volume, small_condition, solution_pos, list_of_solutions, solutions)
+	#Recording which solutions we are using.
+	if len(solution_A) !=0 :
+		list_of_solutions.append(solution_A)
+		solution_pos.append('A1')
+	if len(solution_B) !=0 :
+		list_of_solutions.append(solution_B)
+		solution_pos.append('B1')
+	if len(solution_C) !=0 :
+		list_of_solutions.append(solution_C)
+		solution_pos.append('A2')
+	if len(solution_D) !=0 :
+		list_of_solutions.append(solution_D)
+		solution_pos.append('B2')
+	if len(precipitator) !=0 :
+		list_of_solutions.append(precipitator)
+		solution_pos.append('A3')
 
-    #Then run large volume solution_run_through
-    small_volume = False
-    solution_run_through(small_pipette, large_pipette, container_choice, small_volume, small_condition, solution_pos, list_of_solutions, solutions)
+	#First run small volume solution_run_through
+	small_volume = True
+	solution_run_through(small_pipette, large_pipette, container_choice, small_volume, small_condition, solution_pos, list_of_solutions, solutions)
+
+	#Then run large volume solution_run_through
+	small_volume = False
+	solution_run_through(small_pipette, large_pipette, container_choice, small_volume, small_condition, solution_pos, list_of_solutions, solutions)
 
     #End of entire protocol.
 
